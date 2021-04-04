@@ -22,6 +22,8 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
                        )
 #endif
 {
+    load_hrir_l(HRIR_L_DIR);
+    load_hrir_r(HRIR_R_DIR);
 }
 
 SoundStageAudioProcessor::~SoundStageAudioProcessor()
@@ -83,15 +85,15 @@ void SoundStageAudioProcessor::setCurrentProgram (int index)
 
 const juce::String SoundStageAudioProcessor::getProgramName (int index)
 {
-    return {};
+return {};
 }
 
-void SoundStageAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void SoundStageAudioProcessor::changeProgramName(int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void SoundStageAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void SoundStageAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
@@ -104,35 +106,35 @@ void SoundStageAudioProcessor::releaseResources()
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool SoundStageAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool SoundStageAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
+#if JucePlugin_IsMidiEffect
+    juce::ignoreUnused(layouts);
     return true;
-  #else
+#else
     // This is the place where you check if the layout is supported.
     // In this template code we only support mono or stereo.
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
+#if ! JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
-   #endif
+#endif
 
     return true;
-  #endif
+#endif
 }
 #endif
 
-void SoundStageAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void SoundStageAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     // In case we have more outputs than inputs, this code clears any output
@@ -142,7 +144,7 @@ void SoundStageAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -150,12 +152,71 @@ void SoundStageAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+
+
+
+    // make mono
+    for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+        float sampleLeft = buffer.getSample(0, sample);
+        float sampleRight = buffer.getSample(1, sample);
+        float monoSummed = sampleLeft + sampleRight;
+        buffer.setSample(0, sample, monoSummed);
+        buffer.setSample(1, sample, monoSummed);
+    }
+
+    float* left_hrtf = get_hrir_l(4, 8);
+    float* right_hrtf = get_hrir_r(4, 8);
+
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
 
+        if (channel == 0) {
+            applyHRTF(channelData, left_hrtf, buffer.getNumSamples());
+        }
+        if (channel == 1) {
+            applyHRTF(channelData, right_hrtf, buffer.getNumSamples());
+        }
+
         // ..do something to the data...
     }
+}
+
+void SoundStageAudioProcessor::applyHRTF(float* channelData, float* hrtf, int numSamples) {
+    
+    int num_conv;
+    int i, j, k;
+    float temp;
+
+    num_conv = numSamples + 200 - 1;
+    
+    //for each sample in block
+    for (i = 0; i < num_conv; i++) {
+       
+        k = i;
+        temp = 0.0;
+
+        //for each sample in filter
+        for (j = 0; j < 200; j++) {
+
+            if (k >= 0 && k < numSamples) {
+                temp = temp + (channelData[k] * hrtf[j]);
+            }
+
+            k--;
+            output[i] = temp;
+
+
+        }
+    }
+
+    for (i = 0; i < numSamples; i++) {
+        channelData[i] = output[i];
+    }
+
+    std::fill_n(output, 1000, 0.0);
+    
+
 }
 
 //==============================================================================
@@ -188,4 +249,87 @@ void SoundStageAudioProcessor::setStateInformation (const void* data, int sizeIn
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new SoundStageAudioProcessor();
+}
+
+int SoundStageAudioProcessor::load_hrir_l(std::string hrir_l_dir) {
+
+    juce::File file = juce::File(hrir_l_dir);
+
+    juce::String s = file.loadFileAsString();
+    if (!file.exists()) {
+        return -1;
+    }
+
+    int pos = 0;
+    juce::StringArray stringArray;
+
+
+    file.readLines(stringArray);
+    for (int i = 0; i < 25; i++) {
+        for (int j = 0; j < 50; j++) {
+            for (int k = 0; k < 200; k++) {
+                hrir_l[i][j][k] = stringArray[(i * 50 * 200) + (j * 200) + k].getFloatValue();
+            }
+        }
+    }
+
+    return 0;
+}
+
+int SoundStageAudioProcessor::load_hrir_r(std::string hrir_r_dir) {
+    juce::File file = juce::File(hrir_r_dir);
+
+    juce::String s = file.loadFileAsString();
+    if (!file.exists()) {
+        return -1;
+    }
+
+    int pos = 0;
+    juce::StringArray stringArray;
+
+
+    file.readLines(stringArray);
+    for (int i = 0; i < 25; i++) {
+        for (int j = 0; j < 50; j++) {
+            for (int k = 0; k < 200; k++) {
+                hrir_r[i][j][k] = stringArray[(i * 50 * 200) + (j * 200) + k].getFloatValue();
+            }
+        }
+    }
+
+    return 0;
+}
+
+float* SoundStageAudioProcessor::get_hrir_l(int az, int elevation) {
+    float* value = hrir_l[az][elevation];
+    return value;
+}
+
+float* SoundStageAudioProcessor::get_hrir_r(int az, int elevation) {
+    float* value = hrir_r[az][elevation];
+    return value;
+}
+
+std::vector<float> SoundStageAudioProcessor::cartesian_to_sperical(float x, float y, float z) {
+    std::vector<float> return_vals;
+
+    float r;
+    float theta;
+    float phi;
+
+    r = sqrt((x * x) + (y * y) + (z * z));
+
+    theta = atan2(y,x);
+
+    phi = atan((sqrt((x * x) + (y * y))) / z);
+
+    return_vals.push_back(r);
+    return_vals.push_back(theta);
+    return_vals.push_back(phi);
+
+    return return_vals;
+}
+
+int SoundStageAudioProcessor::closest_elevation_index(float r, float theta, float phi) {
+
 }

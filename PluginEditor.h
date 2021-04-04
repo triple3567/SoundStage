@@ -24,6 +24,10 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    float x;
+    float y;
+    float z;
+
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
