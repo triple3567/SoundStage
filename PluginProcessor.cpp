@@ -22,8 +22,8 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
                        )
 #endif
 {
-    load_hrir_l(HRIR_L_DIR);
-    load_hrir_r(HRIR_R_DIR);
+    load_hrir_l();
+    load_hrir_r();
 
 }
 
@@ -258,7 +258,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new SoundStageAudioProcessor();
 }
 
-int SoundStageAudioProcessor::load_hrir_l(std::string hrir_l_dir) {
+int SoundStageAudioProcessor::load_hrir_l() {
 
     juce::File file = DATA_DIR.getChildFile("SoundStage/hrir_l.txt");
 
@@ -283,7 +283,7 @@ int SoundStageAudioProcessor::load_hrir_l(std::string hrir_l_dir) {
     return 0;
 }
 
-int SoundStageAudioProcessor::load_hrir_r(std::string hrir_r_dir) {
+int SoundStageAudioProcessor::load_hrir_r() {
     juce::File file = DATA_DIR.getChildFile("SoundStage/hrir_r.txt");
 
     juce::String s = file.loadFileAsString();

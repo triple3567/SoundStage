@@ -59,16 +59,13 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    int load_hrir_l(std::string hrir_l_dir);
-    int load_hrir_r(std::string hrir_l_dir);
+    int load_hrir_l();
+    int load_hrir_r();
     float* get_hrir_l(int az, int elevation);
     float* get_hrir_r(int az, int elevation);
-    std::vector<float> cartesian_to_sperical(float x, float y, float z);
 
 
-    const std::string HRIR_L_DIR = "C:/Users/Eric/Dropbox/Semester 7/3D Audio/SoundStage/Source/data/hrir_l.txt";
-    const std::string HRIR_R_DIR = "C:/Users/Eric/Dropbox/Semester 7/3D Audio/SoundStage/Source/data/hrir_r.txt";
-    const juce::File DATA_DIR = juce::File::getSpecialLocation(juce::File::SpecialLocationType::commonApplicationDataDirectory);
+    const juce::File DATA_DIR = juce::File::getSpecialLocation(juce::File::SpecialLocationType::globalApplicationsDirectory);
     float hrir_l[25][50][200];
     float hrir_r[25][50][200];
     float output[1000];
