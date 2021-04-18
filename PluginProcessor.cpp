@@ -22,13 +22,17 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
                        )
 #endif
 {
+    conv = new juce::dsp::Convolution();
     load_hrir_l();
     load_hrir_r();
+    azimuth = 0;
+    elevation = 0;
 
 }
 
 SoundStageAudioProcessor::~SoundStageAudioProcessor()
 {
+    delete conv;
 }
 
 //==============================================================================
@@ -98,6 +102,13 @@ void SoundStageAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+
+    conv->prepare(spec);
 }
 
 void SoundStageAudioProcessor::releaseResources()
@@ -132,6 +143,8 @@ bool SoundStageAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts
 }
 #endif
 
+
+
 void SoundStageAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -164,29 +177,40 @@ void SoundStageAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
         buffer.setSample(1, sample, monoSummed);
     }
 
-    float* left_hrtf = get_hrir_l(4, 8);
-    float* right_hrtf = get_hrir_r(4, 8);
+    juce::dsp::AudioBlock<float> block(buffer);
 
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
+    process(juce::dsp::ProcessContextReplacing<float>(block));
 
-        //skip HRTF if in the head
-        if (azimuth != 0.0 && elevation != 0.0 ) {
-            if (channel == 0) {
-                applyHRTF(channelData, left_hrtf, buffer.getNumSamples());
-            }
-            if (channel == 1) {
-                applyHRTF(channelData, right_hrtf, buffer.getNumSamples());
-            }
-        }
+}
 
-        // ..do something to the data...
-    }
+void SoundStageAudioProcessor::updateParameters() {
 
-    juce::Logger::outputDebugString(juce::String(DATA_DIR.getFullPathName()));
-    juce::Logger::outputDebugString(juce::String( hrir_r[0][0][0]));
-    juce::Logger::outputDebugString(juce::String( hrir_l[24][49][199]));
+}
+
+void SoundStageAudioProcessor::process(juce::dsp::ProcessContextReplacing<float> context) {
+    /*
+    juce::AudioBuffer<float> left_hrtf = get_hrir_l(4, 8);
+    juce::AudioBuffer<float> right_hrtf = get_hrir_r(4, 8);
+    */
+
+    juce::AudioBuffer<float> hrtf = 
+        get_hrir(
+            closest_azimuth_index(azimuth), 
+            closest_elevation_index(elevation)
+        );
+
+    auto* temp = &hrtf;
+
+    conv->loadImpulseResponse(std::move(hrtf),
+        44100.0, 
+        juce::dsp::Convolution::Stereo::yes, 
+        juce::dsp::Convolution::Trim::no,
+        juce::dsp::Convolution::Normalise::yes
+    );
+
+    conv->process(context);
+
+    conv->reset();
 }
 
 void SoundStageAudioProcessor::applyHRTF(float* channelData, float* hrtf, int numSamples) {
@@ -309,14 +333,47 @@ int SoundStageAudioProcessor::load_hrir_r() {
     return 0;
 }
 
-float* SoundStageAudioProcessor::get_hrir_l(int az, int elevation) {
+juce::AudioBuffer<float> SoundStageAudioProcessor::get_hrir_l(int az, int elevation) {
     float* value = hrir_l[az][elevation];
-    return value;
+    juce::AudioBuffer<float> buffer = juce::AudioBuffer<float>(1, 200);
+    auto* writePointer = buffer.getWritePointer(0);
+
+    for (int i = 0; i < 200; i++) {
+        writePointer[i] = value[i];
+    }
+
+    return buffer;
 }
 
-float* SoundStageAudioProcessor::get_hrir_r(int az, int elevation) {
+juce::AudioBuffer<float> SoundStageAudioProcessor::get_hrir_r(int az, int elevation) {
     float* value = hrir_r[az][elevation];
-    return value;
+    juce::AudioBuffer<float> buffer = juce::AudioBuffer<float>(1, 200);
+    auto* writePointer = buffer.getWritePointer(0);
+
+    for (int i = 0; i < 200; i++) {
+        writePointer[i] = value[i];
+    }
+
+    return buffer;
+}
+
+juce::AudioBuffer<float> SoundStageAudioProcessor::get_hrir(int az, int elevation) {
+    float* value = hrir_l[az][elevation];
+    juce::AudioBuffer<float> buffer = juce::AudioBuffer<float>(2, 200);
+    auto* writePointer = buffer.getWritePointer(0);
+
+    for (int i = 0; i < 200; i++) {
+        writePointer[i] = value[i];
+    }
+
+    value = hrir_r[az][elevation];
+    writePointer = buffer.getWritePointer(1);
+
+    for (int i = 0; i < 200; i++) {
+        writePointer[i] = value[i];
+    }
+
+    return buffer;
 }
 
 int SoundStageAudioProcessor::closest_elevation_index(float elevation) {

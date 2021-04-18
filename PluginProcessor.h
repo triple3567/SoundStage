@@ -59,10 +59,14 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    void process(juce::dsp::ProcessContextReplacing<float> context);
+    void updateParameters();
+
     int load_hrir_l();
     int load_hrir_r();
-    float* get_hrir_l(int az, int elevation);
-    float* get_hrir_r(int az, int elevation);
+    juce::AudioBuffer<float> get_hrir_l(int az, int elevation);
+    juce::AudioBuffer<float> get_hrir_r(int az, int elevation);
+    juce::AudioBuffer<float> get_hrir(int az, int elevation);
 
 
     const juce::File DATA_DIR = juce::File::getSpecialLocation(juce::File::SpecialLocationType::globalApplicationsDirectory);
@@ -71,6 +75,10 @@ public:
     float output[1000];
     int closest_elevation_index(float elevation);
     int closest_azimuth_index(float azimuth);
+    juce::dsp::Convolution convL;
+    juce::dsp::Convolution convR;
+    juce::dsp::ProcessSpec spec;
+    juce::dsp::Convolution* conv;
 
     float elevation;
     float azimuth;
