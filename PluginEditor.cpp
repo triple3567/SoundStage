@@ -63,11 +63,9 @@ void SoundStageAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
 {
     if (slider == &elevationControl) {
         audioProcessor.elevation = elevationControl.getValue();
-        DBG(elevationControl.getValue());
     }
 
     if (slider == &azimuthControl) {
         audioProcessor.azimuth = azimuthControl.getValue();
-        DBG(azimuthControl.getValue());
     }
 }
