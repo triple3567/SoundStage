@@ -9,17 +9,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-/* THINGS ZACH NEEDS TO DO:
-	Take in midi input: modulation and pitch wheel for y and x respectively
-	Map that to a circle (1m in radius but that's not important) and a vertical slider (-1m to 1m, again not important)
-	Give Elias the degrees around the circle, and a double from -1 to 1 for elevation 
-		^^ THE MAPPING MIGHT NEED TO BE DONE IN INCREMENTS BASED OFF OF AZIMUTHS AND WE MUST LIE TO THE USER IDK
-	Calculate elevation angle based on the height, given that the radius is always 1
-	Give Eric the elevation angle and the azimuth; he will figure out the closest ones
-	
-	Step 5: Profit
-*/
-
 //==============================================================================
 SoundStageAudioProcessor::SoundStageAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
