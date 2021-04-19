@@ -26,7 +26,7 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
     load_hrir_l();
     load_hrir_r();
     azimuth = 0;
-    elevation = 180;
+    elevation = 0;
 
 }
 
@@ -389,7 +389,6 @@ int SoundStageAudioProcessor::closest_elevation_index(float elevation) {
         }
     }
 
-    juce::Logger::outputDebugString(juce::String("elev index") + juce::String(index_found));
     return index_found;
 }
 
@@ -405,6 +404,6 @@ int SoundStageAudioProcessor::closest_azimuth_index(float azimuth) {
             index_found = i;
         }
     }
-    juce::Logger::outputDebugString(juce::String("az index") + juce::String(index_found));
+
     return index_found;
 }
