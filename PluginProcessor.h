@@ -14,6 +14,7 @@
 #include <string>
 #include <math.h>
 #include <cmath>
+#include "Convoluter.h"
 
 //==============================================================================
 /**
@@ -62,6 +63,14 @@ public:
 	void process(juce::dsp::ProcessContextReplacing<float> context);
 	void updateParameters();
 
+	//real params
+	float elevation;
+	float azimuth;
+	Convoluter* convoluter;
+
+
+	//end read params
+
 	int load_hrir_l();
 	int load_hrir_r();
 	juce::AudioBuffer<float> get_hrir_l(int az, int elevation);
@@ -81,8 +90,7 @@ public:
 	juce::dsp::ProcessSpec spec;
 	juce::dsp::Convolution* conv;
 
-	float elevation;
-	float azimuth;
+	
 	float elevation_values[50] = { -45., -39.375, -33.75, -28.125, -22.5,
 								   -16.875, -11.25 , -5.625, 0., 5.625,
 									11.25, 16.875, 22.5, 28.125, 33.75,

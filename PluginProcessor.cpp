@@ -32,7 +32,7 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
 
 SoundStageAudioProcessor::~SoundStageAudioProcessor()
 {
-	delete conv;
+	delete convoluter;
 }
 
 //==============================================================================
@@ -103,11 +103,8 @@ void SoundStageAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBl
 	// Use this method as the place to do any pre-playback
 	// initialisation that you need..
 
-	spec.sampleRate = sampleRate;
-	spec.maximumBlockSize = samplesPerBlock;
-	spec.numChannels = getTotalNumOutputChannels();
+	convoluter = new Convoluter(samplesPerBlock);
 
-	conv->prepare(spec);
 }
 
 void SoundStageAudioProcessor::releaseResources()
@@ -178,10 +175,16 @@ void SoundStageAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, ju
 		buffer.setSample(1, sample, monoSummed);
 	}
 
-	juce::dsp::AudioBlock<float> block(buffer);
+	juce::AudioBuffer<float> bufferCopy;
+	bufferCopy.makeCopyOf(buffer);
 
-	process(juce::dsp::ProcessContextReplacing<float>(block));
+	convoluter->elevation = elevation;
+	convoluter->azimuth = azimuth;
 
+	convoluter->applyOutput(buffer);
+	convoluter->readInput(bufferCopy);
+	
+	
 }
 
 void SoundStageAudioProcessor::updateParameters() {
@@ -244,8 +247,6 @@ void SoundStageAudioProcessor::applyHRTF(float* channelData, float* hrtf, int nu
 	}
 
 	std::fill_n(output, 1000, 0.0);
-
-
 }
 
 //==============================================================================
