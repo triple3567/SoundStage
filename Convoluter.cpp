@@ -10,11 +10,12 @@
 
 #include "Convoluter.h"
 
-Convoluter::Convoluter(int numSamplesPerBlock) {
-	bufferSize = numSamplesPerBlock * 10;
-	inputBuffer = juce::AudioBuffer<float>(2, bufferSize);
-	outputBuffer = juce::AudioBuffer<float>(2, bufferSize);
-	convolutedSignal = juce::AudioBuffer<float>(2, bufferSize + 200);;
+Convoluter::Convoluter() {
+	currSamplesPerBlock = -1;
+	bufferSize = -1;
+	inputBuffer = juce::AudioBuffer<float>();
+	outputBuffer = juce::AudioBuffer<float>();
+	convolutedSignal = juce::AudioBuffer<float>();;
 	overflowStorage = juce::AudioBuffer<float>(2, 200);
 
 	inputPos = 0;
@@ -28,6 +29,17 @@ Convoluter::Convoluter(int numSamplesPerBlock) {
 
 Convoluter::~Convoluter() {
 
+}
+
+void Convoluter::setSamplesPerBlock(int samplesPerBlock) {
+
+	if (samplesPerBlock != currSamplesPerBlock) {
+		bufferSize = samplesPerBlock * 10;
+		inputBuffer = juce::AudioBuffer<float>(2, bufferSize);
+		outputBuffer = juce::AudioBuffer<float>(2, bufferSize);
+		convolutedSignal = juce::AudioBuffer<float>(2, bufferSize + 200);;
+		overflowStorage = juce::AudioBuffer<float>(2, 200);
+	}
 }
 
 void Convoluter::readInput(juce::AudioBuffer<float>& buffer) {

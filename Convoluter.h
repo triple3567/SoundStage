@@ -15,10 +15,11 @@
 
 class Convoluter {
     public:
-        Convoluter(int numSamplesPerBlock);
+        Convoluter();
         ~Convoluter();
         void applyOutput(juce::AudioBuffer<float>& buffer);
         void readInput(juce::AudioBuffer<float>& buffer);
+        void setSamplesPerBlock(int samplesPerBlock);
         float elevation;
         float azimuth;
     private:
@@ -30,6 +31,7 @@ class Convoluter {
         int overflowSize = 200;
         int inputPos;
         int outputPos;
+        int currSamplesPerBlock;
         const juce::File DATA_DIR = 
             juce::File::getSpecialLocation(
                 juce::File::SpecialLocationType::globalApplicationsDirectory
