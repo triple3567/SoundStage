@@ -35,6 +35,9 @@ private:
 
     juce::Slider elevationControl;
     juce::Slider azimuthControl;
+    
+    juce::Label azLabel;
+    juce::Label elLabel;
 
     
     SoundStageAudioProcessor& audioProcessor;

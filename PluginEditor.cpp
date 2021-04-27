@@ -25,7 +25,6 @@ SoundStageAudioProcessorEditor::SoundStageAudioProcessorEditor (SoundStageAudioP
     elevationControl.addListener(this);
     addAndMakeVisible(elevationControl);
 
-
     // AZIMUTH SLIDER SETTINGS
     azimuthControl.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     azimuthControl.setRange(0.f, 360.f, 1.f);
@@ -34,6 +33,24 @@ SoundStageAudioProcessorEditor::SoundStageAudioProcessorEditor (SoundStageAudioP
     azimuthControl.addListener(this);
     addAndMakeVisible(azimuthControl);
 
+    // LABEL SETTINGS
+    azLabel.setText("AZIMUTH", juce::NotificationType::dontSendNotification);
+    elLabel.setText("ELEVATION", juce::NotificationType::dontSendNotification);
+    azLabel.setEditable(false);
+    elLabel.setEditable(false);
+    azLabel.setJustificationType(juce::Justification::centred);
+    azLabel.attachToComponent(&azimuthControl, false);
+    elLabel.attachToComponent(&elevationControl, true);
+    addAndMakeVisible(azLabel);
+    addAndMakeVisible(elLabel);
+
+    // COLOR SCHEME SETTINGS
+    getLookAndFeel().setColour(juce::Slider::thumbColourId, juce::Colours::purple);
+    getLookAndFeel().setColour(juce::Slider::trackColourId, juce::Colours::white);
+    getLookAndFeel().setColour(juce::Slider::rotarySliderFillColourId, juce::Colours::white);
+    getLookAndFeel().setColour(juce::Slider::backgroundColourId, juce::Colours::black);
+    getLookAndFeel().setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colours::black);
+    getLookAndFeel().setColour(juce::ResizableWindow::backgroundColourId, juce::Colours::darkgrey);
 
     setSize (400, 300);
 }
@@ -46,8 +63,11 @@ SoundStageAudioProcessorEditor::~SoundStageAudioProcessorEditor()
 void SoundStageAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
+    
+    juce::ColourGradient grad1(juce::Colours::darkgrey, 200, 150, juce::Colours::black, 600, 400, 1);
+    g.setGradientFill(grad1);
+    g.fillAll();
+    
 }
 
 void SoundStageAudioProcessorEditor::resized()
@@ -56,7 +76,8 @@ void SoundStageAudioProcessorEditor::resized()
     // subcomponents in your editor..
 
     elevationControl.setBounds(3 * getWidth() / 4, getHeight()/8, 100, 3 * getHeight() / 4);
-    azimuthControl.setBounds(0, 50, 200, 200);
+    azimuthControl.setBounds(0, 65, 200, 200);
+    
 }
 
 void SoundStageAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
