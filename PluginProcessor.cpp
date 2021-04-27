@@ -30,6 +30,7 @@ SoundStageAudioProcessor::SoundStageAudioProcessor()
 SoundStageAudioProcessor::~SoundStageAudioProcessor()
 {
 	delete convoluter;
+	delete this->conv;
 }
 
 //==============================================================================
